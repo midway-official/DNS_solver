@@ -10,8 +10,8 @@ double a, b;
 
 // Mesh 类的构造函数
 Mesh::Mesh(int n_y, int n_x)
-    : u(n_y + 2, n_x + 2), u_star(n_y + 2, n_x + 2),
-      v(n_y + 2, n_x + 2), v_star(n_y + 2, n_x + 2),
+    : u(n_y + 2, n_x + 2), u_star(n_y + 2, n_x + 2),u0(n_y + 2, n_x + 2), du(n_y + 2, n_x + 2),
+      v(n_y + 2, n_x + 2), v_star(n_y + 2, n_x + 2),v0(n_y + 2, n_x + 2), dv(n_y + 2, n_x + 2),
       p(n_y + 2, n_x + 2), p_star(n_y + 2, n_x + 2), p_prime(n_y + 2, n_x + 2),
       u_face(n_y + 2, n_x + 1), v_face(n_y + 1, n_x + 2) {}
 
@@ -26,6 +26,10 @@ void Mesh::initializeToZero() {
     p_prime.setZero();
     u_face.setZero();
     v_face.setZero();
+    u0.setZero();
+    du.setZero();
+    v0.setZero();
+    dv.setZero();
 }
 
 // 显示矩阵内容

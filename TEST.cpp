@@ -1,7 +1,45 @@
 #include "DNS.h"
+#include <filesystem>
+#include <chrono>
+namespace fs = std::filesystem;
 
 
-
+void show_progress_bar(int current_step, int total_steps, double elapsed_time) {
+    // 计算进度百分比
+    double progress = static_cast<double>(current_step) / total_steps;
+    
+    // 设置进度条的宽度
+    int bar_width = 50;
+    
+    // 计算进度条中"="的数量
+    int pos = static_cast<int>(bar_width * progress);
+    
+    // 计算预计剩余时间
+    double remaining_time = (elapsed_time / current_step) * (total_steps - current_step);
+    
+    // 打印进度条和相关信息
+    std::cout << "[";
+    
+    // 绘制进度条
+    for (int i = 0; i < bar_width; ++i) {
+        if (i < pos) {
+            std::cout << "=";  // 已完成的部分
+        } else if (i == pos) {
+            std::cout << ">";  // 当前进度的位置
+        } else {
+            std::cout << " ";  // 未完成的部分
+        }
+    }
+    
+    // 显示进度条，已用时间和预计剩余时间
+    std::cout << "] " 
+              << std::fixed << std::setprecision(2) << progress * 100 << "% "  // 显示进度百分比
+              << "已用时间: " << std::fixed << std::setprecision(2) << elapsed_time << "秒 "  // 显示已用时间
+              << "预计剩余时间: " << std::fixed << std::setprecision(2) << remaining_time << "秒\r";  // 显示预计剩余时间
+    
+    // 刷新输出，确保实时更新
+    std::cout.flush();
+}
 void movement_function(Mesh &mesh,Equation &equ_u,Equation &equ_v)
 
 {   double alpha_uv=10e-2;
@@ -214,9 +252,6 @@ void movement_function(Mesh &mesh,Equation &equ_u,Equation &equ_v)
 
 
 }
-//组装方程组
-
-
 
 int main ()
 {
@@ -237,57 +272,105 @@ int main ()
     
     std::cout << "顶盖速度:";
     std::cin >> vx;
-   
+    //设定全局变量
     velocity=vx;
-    //初始化速度压力矩阵
+    //创建网格
     Mesh mesh(n_y0,n_x0);
+    //建立u v p的方程
     Equation equ_u(n_y0,n_x0);
     Equation equ_v(n_y0,n_x0);
     Equation equ_p(n_y0,n_x0);
-   
-    
+    //时间步长
+    double dt=0.01;
+    //总时间步数
+    int timesteps=800;
     //设置边界条件   
     mesh.u.block(0,1,1,n_x0)=MatrixXd::Constant(1,n_x0,vx);
     mesh.u_star.block(0,1,1,n_x0)=MatrixXd::Constant(1,n_x0,vx);
     mesh.u_face.block(0,1,1,n_x0-1)=MatrixXd::Constant(1,n_x0-1,vx);
     
-
-    int max_outer_iterations=5000;
-    
-    for(int n=1;n<=max_outer_iterations;n++)
-    {
-        movement_function(mesh,equ_u,equ_v);
-        equ_u.build_matrix();
-        equ_v.build_matrix();
-        double epsilon_uv=0.75;
-        solve(equ_u.A,equ_u.source,mesh.u,l2_norm_x,epsilon_uv,n_x0,n_y0);
-        solve(equ_v.A,equ_v.source,mesh.v,l2_norm_y,epsilon_uv,n_x0,n_y0);
-        
-        face_velocity(mesh ,equ_u);
-        
-        pressure_function(mesh,equ_p,equ_u);
-
-        equ_p.build_matrix();
-        double epsilon_p=1e-4;
-        solve(equ_p.A,equ_p.source,mesh.p_prime,l2_norm_p,epsilon_p,n_x0,n_y0);
-        
-        correct_pressure(mesh,equ_u);
-
-        correct_velocity(mesh,equ_u);
-        
-      
-        mesh.p=mesh.p_star;
-        
-        std::cout << " 轮数"<< n << " x速度残差 " << l2_norm_x << " y速度残差 " << l2_norm_y << " 压力残差 " << l2_norm_p << "\n";
-        
-        if(l2_norm_x < 1e-5 & l2_norm_y < 1e-5 & l2_norm_p < 1e-6)
-        { 
-        std::cout << "simple算法收敛";
-        break;
+        // 创建顶层的 result 文件夹
+    std::string result_folder = "result";
+    if (!fs::exists(result_folder)) {
+            fs::create_directory(result_folder);
+            
         }
 
-    }
-
+    // 切换到 result 文件夹
+    fs::current_path(result_folder);
+    auto start_time = std::chrono::steady_clock::now();  // 开始计时
+    // 循环执行
+    for (int i = 0; i <= timesteps; ++i) { 
+        std::string folder_name = std::to_string(i);
+        if (!fs::exists(folder_name)) {
+            fs::create_directory(folder_name);
+            std::cout << "结果保存于: " << folder_name << std::endl;
+        }
+        std::cout<<"时间步长 "<< i <<std::endl;
+        // 切换到当前编号文件夹
+       fs::current_path(folder_name);
+       //记录上一个时间步长的u v
+       mesh.u0 = mesh.u;
+       mesh.v0 = mesh.v;
+       //每步最大迭代次数
+       int max_outer_iterations=500;
+       //simple算法迭代
+       for(int n=1;n<=max_outer_iterations;n++)
+          {
+          //离散动量方程 
+          movement_function(mesh,equ_u,equ_v);
+          //组合线性方程组
+          equ_u.build_matrix();
+          equ_v.build_matrix();
+          //求解线性方程组
+          double epsilon_uv=0.75;
+          solve(equ_u.A,equ_u.source,mesh.u,l2_norm_x,epsilon_uv,n_x0,n_y0);
+          solve(equ_v.A,equ_v.source,mesh.v,l2_norm_y,epsilon_uv,n_x0,n_y0);
+          //速度插值到面
+          face_velocity(mesh ,equ_u);
+          //离散压力修正方程
+          pressure_function(mesh,equ_p,equ_u);
+          //组合线性方程组
+          equ_p.build_matrix();
+          //求解压力修正方程
+          double epsilon_p=1e-4;
+          solve(equ_p.A,equ_p.source,mesh.p_prime,l2_norm_p,epsilon_p,n_x0,n_y0);
+          //压力修正
+          correct_pressure(mesh,equ_u);
+          //速度修正
+          correct_velocity(mesh,equ_u);
+        
+          //更新压力
+          mesh.p=mesh.p_star;
+          //收敛性判断
+           std::cout << std::scientific 
+          << " 轮数 " << n 
+          << " x速度残差 " << std::setprecision(6) << l2_norm_x 
+          << " y速度残差 " << std::setprecision(6) << l2_norm_y 
+          << " 压力残差 " << std::setprecision(6) << l2_norm_p 
+          << "\n" << std::endl;
+           if(l2_norm_x < 1e-5 & l2_norm_y < 1e-5 & l2_norm_p < 1e-6)
+           { 
+           //std::cout << "simple算法收敛"<<std::endl;
+            break;
+           }
+        
+        }
+    //显式时间推进
+    mesh.u = mesh.u0 + dt*mesh.u;
+    mesh.v = mesh.v0 + dt*mesh.v;
+    // 显示进度条
+    auto elapsed_time = std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time).count();
+    show_progress_bar(i, timesteps, elapsed_time);
+    //保存信息
     post_processing(mesh,n_x0,n_y0);
+     // 返回到 result 文件夹
+    fs::current_path("..");
+    }
+        // 返回到程序主目录
+    fs::current_path("..");
+    // 最后显示实际计算总耗时
+    auto total_elapsed_time = std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time).count();
+    std::cout << "\n计算完成 总耗时: " << total_elapsed_time << "秒" << std::endl;
 
 }

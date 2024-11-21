@@ -16,12 +16,11 @@ extern double dx, dy, vx;
 extern double velocity;
 extern double l2_norm_x, l2_norm_y, l2_norm_p;
 extern double a, b;
-
 // Mesh 类声明
 class Mesh {
 public:
-    Eigen::MatrixXd u, u_star;
-    Eigen::MatrixXd v, v_star;
+    Eigen::MatrixXd u,u0,du,u_star;
+    Eigen::MatrixXd v,v0,dv,v_star;
     Eigen::MatrixXd p, p_star, p_prime;
     Eigen::MatrixXd u_face, v_face;
 
