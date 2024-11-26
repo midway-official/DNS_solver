@@ -47,12 +47,12 @@ void movement_function(Mesh &mesh,Equation &equ_u,Equation &equ_v)
     int n_x=equ_u.n_x;
     int n_y=equ_u.n_y;
     double D_e,D_w,D_n,D_s,F_e,F_n,F_s,F_w;
-    double  re=10000;
-    double rho =1;
-    D_e=dy/(dx*re);
-    D_w=dy/(dx*re);
-    D_n=dx/(dy*re);
-    D_s=dx/(dy*re);
+    double  vp=10e-6;
+    double rho =10e3;
+    D_e=(dy*vp)/(dx);
+    D_w=(dy*vp)/(dx);
+    D_n=(dx*vp)/(dy);
+    D_s=(dx*vp)/(dy);
     MatrixXd &u= mesh.u;
     MatrixXd &v= mesh.v;
     MatrixXd &u_face= mesh.u_face;
@@ -272,6 +272,14 @@ int main ()
     
     std::cout << "顶盖速度:";
     std::cin >> vx;
+    //时间步长
+    double dt;
+    std::cout << "时间步长:";
+    std::cin >> dt;
+    //总时间步数
+    int timesteps;
+    std::cout << "时间步长数:";
+    std::cin >> timesteps;
     //设定全局变量
     velocity=vx;
     //创建网格
@@ -280,10 +288,8 @@ int main ()
     Equation equ_u(n_y0,n_x0);
     Equation equ_v(n_y0,n_x0);
     Equation equ_p(n_y0,n_x0);
-    //时间步长
-    double dt=0.01;
-    //总时间步数
-    int timesteps=800;
+    
+    
     //设置边界条件   
     mesh.u.block(0,1,1,n_x0)=MatrixXd::Constant(1,n_x0,vx);
     mesh.u_star.block(0,1,1,n_x0)=MatrixXd::Constant(1,n_x0,vx);
@@ -313,7 +319,7 @@ int main ()
        mesh.u0 = mesh.u;
        mesh.v0 = mesh.v;
        //每步最大迭代次数
-       int max_outer_iterations=500;
+       int max_outer_iterations=300;
        //simple算法迭代
        for(int n=1;n<=max_outer_iterations;n++)
           {
@@ -363,7 +369,7 @@ int main ()
     auto elapsed_time = std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time).count();
     show_progress_bar(i, timesteps, elapsed_time);
     //保存信息
-    post_processing(mesh,n_x0,n_y0);
+    post_processing(mesh,n_x0,n_y0,a);
      // 返回到 result 文件夹
     fs::current_path("..");
     }

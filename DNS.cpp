@@ -74,7 +74,7 @@ void Equation::build_matrix() {
 
         int n;
 
-        // Top boundary
+        // 顶盖
         int i = 1;
         for (int j = 2; j < n_x; j++) {
             n = (j - 1);
@@ -84,7 +84,7 @@ void Equation::build_matrix() {
             tripletList.emplace_back(n, n + n_x, -A_s(i, j));
         }
 
-        // Internal cells
+        //内部
         for (i = 2; i < n_y; i++) {
             for (int j = 2; j < n_x; j++) {
                 n = (i - 1) * n_x + (j - 1);
@@ -96,7 +96,6 @@ void Equation::build_matrix() {
             }
         }
 
-        // Left boundary
         int j = 1;
         for (i = 2; i < n_y; i++) {
             n = (i - 1) * n_x;
@@ -106,7 +105,6 @@ void Equation::build_matrix() {
             tripletList.emplace_back(n, n + n_x, -A_s(i, j));
         }
 
-        // Right boundary
         j = n_x;
         for (i = 2; i < n_y; i++) {
             n = i * n_x - 1;
@@ -116,7 +114,6 @@ void Equation::build_matrix() {
             tripletList.emplace_back(n, n + n_x, -A_s(i, j));
         }
 
-        // Bottom boundary
         i = n_y;
         for (j = 2; j < n_x; j++) {
             n = (n_y - 1) * n_x + (j - 1);
@@ -126,8 +123,7 @@ void Equation::build_matrix() {
             tripletList.emplace_back(n, n - n_x, -A_n(i, j));
         }
 
-        // Corners
-        // Top-left corner
+        
         n = 0;
         i = 1;
         j = 1;
@@ -135,7 +131,7 @@ void Equation::build_matrix() {
         tripletList.emplace_back(n, n + 1, -A_e(i, j));
         tripletList.emplace_back(n, n + n_x, -A_s(i, j));
 
-        // Top-right corner
+        
         i = 1;
         j = n_x;
         n = n_x - 1;
@@ -143,7 +139,7 @@ void Equation::build_matrix() {
         tripletList.emplace_back(n, n - 1, -A_w(i, j));
         tripletList.emplace_back(n, n + n_x, -A_s(i, j));
 
-        // Bottom-left corner
+        
         n = (n_y - 1) * n_x;
         j = 1;
         i = n_y;
@@ -151,7 +147,7 @@ void Equation::build_matrix() {
         tripletList.emplace_back(n, n + 1, -A_e(i, j));
         tripletList.emplace_back(n, n - n_x, -A_n(i, j));
 
-        // Bottom-right corner
+        
         n = (n_x * n_y) - 1;
         i = n_y;
         j = n_x;
@@ -159,7 +155,7 @@ void Equation::build_matrix() {
         tripletList.emplace_back(n, n - 1, -A_w(i, j));
         tripletList.emplace_back(n, n - n_x, -A_n(i, j));
 
-        // Assemble the sparse matrix
+        
         A.setFromTriplets(tripletList.begin(), tripletList.end());
     }
 void solve(SparseMatrix <double> &A,VectorXd &b,MatrixXd &phi,double &l2_norm,double &epsilon,int n_x,int n_y)
@@ -184,9 +180,6 @@ void solve(SparseMatrix <double> &A,VectorXd &b,MatrixXd &phi,double &l2_norm,do
     solver.compute(A);
     solver.setTolerance(epsilon);
     x = solver.solve(b);
-    //std::cout << "L2 Norm : " <<  (A*x-b).norm()     << std::endl;
-    //std::cout << "Number of iterations : " <<  solver.iterations()    << std::endl;
-
     n=0;
     for(int i=1;i<n_y+1;i++)
     {
@@ -223,7 +216,7 @@ void face_velocity(Mesh &mesh,Equation &equ_u)
     SparseMatrix<double> &A=equ_u.A;
     int n_y=equ_u.n_y;
     int n_x=equ_u.n_x;
-    //u face velocity
+    //x面上速度
     int i,j;
     double alpha_uv=10e-2;
     for(i=1;i<n_y+1;i++)
@@ -422,7 +415,7 @@ void correct_pressure(Mesh &mesh,Equation &equ_u)
 
     MatrixXd p_ref=MatrixXd::Constant(n_y+2,n_x+2,p_prime(0,0));
     
-    double alpha_p=0.6;
+    double alpha_p=0.1;
     p_star=p+alpha_p*(p_prime);
 
 
@@ -522,11 +515,12 @@ void correct_velocity(Mesh &mesh,Equation &equ_u)
 }
 
 
-void post_processing(Mesh &mseh,int n_x,int n_y)
+void post_processing(Mesh &mseh,int n_x,int n_y,double a)
 {   
     VectorXd x(n_x+2),y(n_y+2);
-    x << 0,VectorXd::LinSpaced(n_x,dx/2.0,1-dx/2.0),1;
-    y << 0,VectorXd::LinSpaced(n_y,dy/2.0,1-dy/2.0),1;
+    x << 0,VectorXd::LinSpaced(n_x,dx/2.0,a-dx/2.0),a;
+    y << 0,VectorXd::LinSpaced(n_y,dy/2.0,a-dy/2.0),a
+    ;
 
     //保存计算结果
      std::ofstream outFile;

@@ -56,6 +56,6 @@ void correct_pressure(Mesh &mesh,Equation &equ_u);
 
 void correct_velocity(Mesh &mesh,Equation &equ_u);
 
-void post_processing(Mesh &mseh,int n_x,int n_y);
+void post_processing(Mesh &mseh,int n_x,int n_y,double a);
 
 #endif // DNS_H
