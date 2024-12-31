@@ -175,7 +175,7 @@ void solve(SparseMatrix <double> &A,VectorXd &b,MatrixXd &phi,double &l2_norm,do
         }
     }
     l2_norm=(A*x-b).norm() ;
-
+    
     BiCGSTAB<SparseMatrix<double> > solver;
     solver.compute(A);
     solver.setTolerance(epsilon);
@@ -325,7 +325,7 @@ void pressure_function(Mesh &mesh,Equation &equ_p,Equation &equ_u)
 
         source_p[n]=-(u_face(i,j) - u_face(i,j - 1))*dy - (v_face(i - 1,j) - v_face(i,j))*dx;
     }
-    //bottom
+
     i=n_y;
     for(j=2;j<n_x;j++)
     { 
@@ -339,7 +339,7 @@ void pressure_function(Mesh &mesh,Equation &equ_p,Equation &equ_u)
         source_p[n]=-(u_face(i,j) - u_face(i,j - 1))*dy - (v_face(i - 1,j) - v_face(i,j))*dx;
     }
 
-    //top left corner
+
     i=1;
     j=1;
     n=0;
@@ -350,7 +350,7 @@ void pressure_function(Mesh &mesh,Equation &equ_p,Equation &equ_u)
 
     source_p[n]=-(u_face(i,j) - u_face(i,j - 1))*dy - (v_face(i - 1,j) - v_face(i,j))*dx;
     
-    //top right corner
+   
     i=1;
     j=n_x;
     n=n_x-1;

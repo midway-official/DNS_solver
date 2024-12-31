@@ -47,8 +47,8 @@ void movement_function(Mesh &mesh,Equation &equ_u,Equation &equ_v)
     int n_x=equ_u.n_x;
     int n_y=equ_u.n_y;
     double D_e,D_w,D_n,D_s,F_e,F_n,F_s,F_w;
-    double  vp=10e-6;
-    double rho =10e3;
+    double  vp=10e-3;
+    double rho =1;
     D_e=(dy*vp)/(dx);
     D_w=(dy*vp)/(dx);
     D_n=(dx*vp)/(dy);
@@ -329,7 +329,7 @@ int main ()
           equ_u.build_matrix();
           equ_v.build_matrix();
           //求解线性方程组
-          double epsilon_uv=0.75;
+          double epsilon_uv=0.001;
           solve(equ_u.A,equ_u.source,mesh.u,l2_norm_x,epsilon_uv,n_x0,n_y0);
           solve(equ_v.A,equ_v.source,mesh.v,l2_norm_y,epsilon_uv,n_x0,n_y0);
           //速度插值到面
@@ -339,7 +339,7 @@ int main ()
           //组合线性方程组
           equ_p.build_matrix();
           //求解压力修正方程
-          double epsilon_p=1e-4;
+          double epsilon_p=1e-6;
           solve(equ_p.A,equ_p.source,mesh.p_prime,l2_norm_p,epsilon_p,n_x0,n_y0);
           //压力修正
           correct_pressure(mesh,equ_u);
@@ -351,11 +351,11 @@ int main ()
           //收敛性判断
            std::cout << std::scientific 
           << " 轮数 " << n 
-          << " x速度残差 " << std::setprecision(6) << l2_norm_x 
-          << " y速度残差 " << std::setprecision(6) << l2_norm_y 
-          << " 压力残差 " << std::setprecision(6) << l2_norm_p 
+          << " x速度残差 " << std::setprecision(6) << l2_norm_x /n_x0*n_y0
+          << " y速度残差 " << std::setprecision(6) << l2_norm_y /n_x0*n_y0
+          << " 压力残差 " << std::setprecision(6) << l2_norm_p /n_x0*n_y0
           << "\n" << std::endl;
-           if(l2_norm_x < 1e-5 & l2_norm_y < 1e-5 & l2_norm_p < 1e-6)
+           if(l2_norm_x/n_x0*n_y0 < 1e-5 & l2_norm_y/n_x0*n_y0 < 1e-5 & l2_norm_p/n_x0*n_y0 < 1e-6)
            { 
            //std::cout << "simple算法收敛"<<std::endl;
             break;
