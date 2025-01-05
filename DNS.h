@@ -9,7 +9,7 @@
 #include <vector>
 
 using namespace Eigen;
-
+using namespace std;
 // 全局变量声明
 extern int n_x0, n_y0;
 extern double dx, dy, vx;
@@ -19,25 +19,26 @@ extern double a, b;
 // Mesh 类声明
 class Mesh {
 public:
-    Eigen::MatrixXd u,u0,du,u_star;
-    Eigen::MatrixXd v,v0,dv,v_star;
-    Eigen::MatrixXd p, p_star, p_prime;
-    Eigen::MatrixXd u_face, v_face;
-
+    MatrixXd u,u0,u_star;
+    MatrixXd v,v0,v_star;
+    MatrixXd p, p_star, p_prime;
+    MatrixXd u_face, v_face;
+    MatrixXd bctype,zoneid;
+    vector<double> zoneuv;
     Mesh() = default;  // 默认构造函数
     Mesh(int n_y, int n_x);  // 参数化构造函数
 
     void initializeToZero();
-    void displayMatrix(const Eigen::MatrixXd& matrix, const std::string& name) const;
+    void displayMatrix(const MatrixXd& matrix, const std::string& name) const;
     void displayAll() const;
 };
 
 // Equation 类声明
 class Equation {
 public:
-    Eigen::MatrixXd A_p, A_e, A_w, A_n, A_s;
-    Eigen::VectorXd source;
-    Eigen::SparseMatrix<double> A;
+    MatrixXd A_p, A_e, A_w, A_n, A_s;
+    VectorXd source;
+    SparseMatrix<double> A;
     int n_x, n_y;
 
     Equation(int n_y_, int n_x_);

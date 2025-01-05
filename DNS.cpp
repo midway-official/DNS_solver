@@ -8,12 +8,13 @@ double velocity;
 double l2_norm_x = 0.0, l2_norm_y = 0.0, l2_norm_p = 0.0;
 double a, b;
 
+
 // Mesh 类的构造函数
 Mesh::Mesh(int n_y, int n_x)
-    : u(n_y + 2, n_x + 2), u_star(n_y + 2, n_x + 2),u0(n_y + 2, n_x + 2), du(n_y + 2, n_x + 2),
-      v(n_y + 2, n_x + 2), v_star(n_y + 2, n_x + 2),v0(n_y + 2, n_x + 2), dv(n_y + 2, n_x + 2),
+    : u(n_y + 2, n_x + 2), u_star(n_y + 2, n_x + 2),u0(n_y + 2, n_x + 2),
+      v(n_y + 2, n_x + 2), v_star(n_y + 2, n_x + 2),v0(n_y + 2, n_x + 2), 
       p(n_y + 2, n_x + 2), p_star(n_y + 2, n_x + 2), p_prime(n_y + 2, n_x + 2),
-      u_face(n_y + 2, n_x + 1), v_face(n_y + 1, n_x + 2) {}
+      u_face(n_y + 2, n_x + 1), v_face(n_y + 1, n_x + 2),bctype(n_y + 2, n_x + 2),zoneid(n_y + 2, n_x + 2) {}
 
 // 初始化所有矩阵为零
 void Mesh::initializeToZero() {
@@ -26,15 +27,14 @@ void Mesh::initializeToZero() {
     p_prime.setZero();
     u_face.setZero();
     v_face.setZero();
-    u0.setZero();
-    du.setZero();
+    u0.setZero();   
     v0.setZero();
-    dv.setZero();
+   
 }
 
 // 显示矩阵内容
-void Mesh::displayMatrix(const Eigen::MatrixXd& matrix, const std::string& name) const {
-    std::cout << name << ":\n" << matrix << "\n";
+void Mesh::displayMatrix(const MatrixXd& matrix, const string& name) const {
+    cout << name << ":\n" << matrix << "\n";
 }
 
 // 显示所有矩阵
@@ -175,7 +175,7 @@ void solve(SparseMatrix <double> &A,VectorXd &b,MatrixXd &phi,double &l2_norm,do
         }
     }
     l2_norm=(A*x-b).norm() ;
-    
+
     BiCGSTAB<SparseMatrix<double> > solver;
     solver.compute(A);
     solver.setTolerance(epsilon);
@@ -223,7 +223,9 @@ void face_velocity(Mesh &mesh,Equation &equ_u)
     {
       for (j=1;j<n_x;j++)
       {
-        u_face(i,j)=0.5*(u(i,j) + u(i,j + 1)) + 0.25*alpha_uv*(p(i,j + 1) - p(i,j - 1))*dy/A_p(i,j) + 0.25*alpha_uv*(p(i,j + 2) - p(i,j))*dy/A_p(i,j + 1)- 0.5*alpha_uv*(1/A_p(i,j) + 1/A_p(i,j + 1))*(p(i,j + 1) - p(i,j))*dy;
+        u_face(i,j)=0.5*(u(i,j) + u(i,j + 1)) //线性插值部分
+        + 0.25*alpha_uv*(p(i,j + 1) - p(i,j - 1))*dy*dx/A_p(i,j)*dx + 0.25*alpha_uv*(p(i,j + 2) - p(i,j))*dy*dx/A_p(i,j + 1)*dx//相邻单元压力梯度平均值
+        - 0.5*alpha_uv*(1/A_p(i,j) + 1/A_p(i,j + 1))*(p(i,j + 1) - p(i,j))*dy*dx/dx;//面上压力梯度
           
       }  
     }
@@ -260,7 +262,7 @@ void pressure_function(Mesh &mesh,Equation &equ_p,Equation &equ_u)
     MatrixXd &Ap_n=equ_p.A_n;
     MatrixXd &Ap_s=equ_p.A_s;
     MatrixXd &A_p=equ_u.A_p;
-    Eigen::VectorXd &source_p=equ_p.source;
+    VectorXd &source_p=equ_p.source;
     int n_x=equ_u.n_x;
     int n_y=equ_u.n_y;
     int n,i,j;
@@ -284,7 +286,7 @@ void pressure_function(Mesh &mesh,Equation &equ_p,Equation &equ_u)
 
     }
     
-    //顶面
+  
     i=1;
     for(j=2;j<n_x;j++)
     { 
@@ -298,7 +300,7 @@ void pressure_function(Mesh &mesh,Equation &equ_p,Equation &equ_u)
         source_p[n]=-(u_face(i,j) - u_face(i,j - 1))*dy - (v_face(i - 1,j) - v_face(i,j))*dx;
     }
     
-    //左壁面
+
     j=1;
     for(i=2;i<n_y;i++)
     { 
@@ -312,7 +314,7 @@ void pressure_function(Mesh &mesh,Equation &equ_p,Equation &equ_u)
         source_p[n]=-(u_face(i,j) - u_face(i,j - 1))*dy - (v_face(i - 1,j) - v_face(i,j))*dx;
     }
 
-    //有壁面
+ 
     j=n_x;
     for(i=2;i<n_y;i++)
     {
@@ -339,7 +341,7 @@ void pressure_function(Mesh &mesh,Equation &equ_p,Equation &equ_u)
         source_p[n]=-(u_face(i,j) - u_face(i,j - 1))*dy - (v_face(i - 1,j) - v_face(i,j))*dx;
     }
 
-
+   
     i=1;
     j=1;
     n=0;
@@ -350,7 +352,6 @@ void pressure_function(Mesh &mesh,Equation &equ_p,Equation &equ_u)
 
     source_p[n]=-(u_face(i,j) - u_face(i,j - 1))*dy - (v_face(i - 1,j) - v_face(i,j))*dx;
     
-   
     i=1;
     j=n_x;
     n=n_x-1;
@@ -415,7 +416,7 @@ void correct_pressure(Mesh &mesh,Equation &equ_u)
 
     MatrixXd p_ref=MatrixXd::Constant(n_y+2,n_x+2,p_prime(0,0));
     
-    double alpha_p=0.1;
+    double alpha_p=0.3;
     p_star=p+alpha_p*(p_prime);
 
 
